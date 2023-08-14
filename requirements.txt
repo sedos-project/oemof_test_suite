@@ -1,0 +1,1 @@
+oemof.solph @ git+https://github.com/oemof/oemof-solph.git@v0.5.1.dev2

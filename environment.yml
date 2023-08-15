@@ -1,0 +1,11 @@
+name: oemof_test_suite
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - git+https://github.com/oemof/oemof-solph.git@dev
+      - matplotlib
+  - coin-or-cbc

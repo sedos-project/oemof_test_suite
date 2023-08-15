@@ -6,24 +6,24 @@ from matplotlib import pyplot as plt
 from oemof import solph
 from datetime import datetime
 
+
 class TestSuite:
-    def __init__(self):
-        self.components = []
+    def __init__(self, periods):
+        self.periods = periods
+
         self.setup_energysystem()
         self.add_components()
 
-
     def setup_energysystem(self):
         # create an energy system
-        # TODO adjust periods to max 21
-        self.date_time_index = pd.date_range("1/1/2023", periods=3, freq="H")
+        self.date_time_index = pd.date_range("1/1/2023", periods=self.periods,
+                                             freq="H")
         self.energysystem = solph.EnergySystem(
             groupings=solph.GROUPINGS,
             timeindex=self.date_time_index,
             infer_last_interval=False)
 
     def add_components(self):
-
         es = self.energysystem
 
         # power bus
@@ -42,12 +42,14 @@ class TestSuite:
         com_3 = solph.Bus(label="com_3")
         es.add(com_3)
 
+        # import source ts
+        df = pd.read_csv("./input/commodities.csv", index_col=0)
+
         source_1 = solph.components.Source(
             label="source_1",
             outputs={com_1: solph.Flow(
                 nominal_value=1,
-                fix=[1] *  7 +
-                    [0] * 14
+                fix=df["com_1"]
             )},
         )
         es.add(source_1)
@@ -56,9 +58,7 @@ class TestSuite:
             label="source_2",
             outputs={com_2: solph.Flow(
                 nominal_value=1,
-                fix=[0] * 7 +
-                    [1] * 7 +
-                    [0] * 7
+                fix=df["com_2"]
             )},
         )
         es.add(source_2)
@@ -67,16 +67,15 @@ class TestSuite:
             label="source_3",
             outputs={com_3: solph.Flow(
                 nominal_value=1,
-                fix=[0] * 14 +
-                    [1] * 7
+                fix=df["com_3"]
             )},
         )
         es.add(source_3)
 
         sink = solph.components.Sink(
-                label="sink_el",
-                inputs={bel: solph.Flow()},
-            )
+            label="sink_el",
+            inputs={bel: solph.Flow()},
+        )
         es.add(sink)
 
         conversion = solph.components.Transformer(
@@ -95,7 +94,6 @@ class TestSuite:
         )
         es.add(conversion)
 
-
         # create an optimization problem and solve it
         model = solph.Model(es)
 
@@ -109,9 +107,12 @@ class TestSuite:
         results = solph.processing.results(model)
 
         # plot the results
-        plt.plot(results[(source_3, com_3 )]["sequences"], label="commodity_3", drawstyle="steps-post")
-        plt.plot(results[(source_2, com_2 )]["sequences"], label="commodity_2", drawstyle="steps-post")
-        plt.plot(results[(source_1, com_1 )]["sequences"], label="commodity_1", drawstyle="steps-post")
+        plt.plot(results[(source_3, com_3)]["sequences"], label="commodity_3",
+                 drawstyle="steps-post")
+        plt.plot(results[(source_2, com_2)]["sequences"], label="commodity_2",
+                 drawstyle="steps-post")
+        plt.plot(results[(source_1, com_1)]["sequences"], label="commodity_1",
+                 drawstyle="steps-post")
 
         plt.xticks(rotation=45)
         plt.legend()
@@ -122,5 +123,4 @@ class TestSuite:
 
 
 if __name__ == "__main__":
-
-    a = TestSuite()
+    a = TestSuite(periods=21)
